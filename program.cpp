@@ -6,7 +6,7 @@
 
 
 using namespace std;
-queue <long long> kolejka;
+queue <long long> LICZBY_LOSOWE;
 
 void generuj(){
   long long random_value = 0; //deklaracja losowej liczby
@@ -19,7 +19,7 @@ void generuj(){
         if(urandom) //read ok
         {
             cout << "random: " << random_value << endl;
-            kolejka.push(random_value);
+            LICZBY_LOSOWE.push(random_value);
         }
         else
         {
@@ -36,9 +36,9 @@ void generuj(){
 
 int main(){
   auto generatorThread = thread(generuj);
-  cout<<kolejka.size()<<endl;
+  cout<<LICZBY_LOSOWE.size()<<endl;
   generatorThread.join();
-  cout<<kolejka.size()<<endl;
+  cout<<LICZBY_LOSOWE.size()<<endl;
 
   return 0;
 }
