@@ -9,12 +9,14 @@
 #include <condition_variable>
 #include <fstream>
 #include <queue>
+#include <cmath>
 #include "Plansza.h"
 
 using namespace std;
 
-void addRandomNumber(unsigned long long int &random_value, size_t size, ifstream &urandom);
+void addRandomNumber(unsigned long long &random_value, size_t size, ifstream &urandom);
 void totalHitSum(shared_ptr<Plansza> totalHits);
+long long getValueAndPop(queue <long long> &kolejka);
 
 mutex QUEUE_GUARD;
 condition_variable RANDOM_GENERATED;
@@ -36,6 +38,7 @@ void generuj()
         if(urandom) //read ok
         {
             lock_guard<mutex> guard(QUEUE_GUARD);
+            addRandomNumber(random_value, size, urandom);
             addRandomNumber(random_value, size, urandom);
             RANDOM_GENERATED.notify_one();
         }
@@ -67,11 +70,18 @@ int main()
   return 0;
 }
 
-void addRandomNumber(unsigned long long int &random_value, size_t size, ifstream &urandom)
+void addRandomNumber(unsigned long long &random_value, size_t size, ifstream &urandom)
 {
 	urandom.read(reinterpret_cast<char *>(&random_value), size);
 	LICZBY_LOSOWE.push(random_value % (2 * RADIUS) - RADIUS);
   //cout<<LICZBY_LOSOWE.size()<<endl; // Sprawdzam czy kolejka zwieksza rozmiar
+}
+
+long long getValueAndPop(queue <long long> &kolejka)
+{
+  long long var = kolejka.front();
+  kolejka.pop();
+  return var;
 }
 
 void totalHitSum(shared_ptr<Plansza> totalHits)
@@ -79,11 +89,12 @@ void totalHitSum(shared_ptr<Plansza> totalHits)
 	while (!THREAD_STOP) {
 		unique_lock<mutex> lock(QUEUE_GUARD);
 		RANDOM_GENERATED.wait(lock);
-    // some code missing here
+    long long x = getValueAndPop(LICZBY_LOSOWE);
+    long long y = getValueAndPop(LICZBY_LOSOWE);
+    long long z = sqrt(pow(x,2)+pow(y,2));
 		totalHits->incrementTotal();
-    cout<<totalHits->getTotal() << endl;
-		// if (some_var <= RADIUS) {
-		// 	totalHits->incrementHits();
-		// }
+		if (z <= RADIUS)
+			totalHits->incrementHits();
+      cout<<totalHits->getHits() << endl;
 	}
 }
