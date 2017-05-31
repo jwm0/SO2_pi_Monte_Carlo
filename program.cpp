@@ -10,13 +10,16 @@
 #include <fstream>
 #include <queue>
 #include <cmath>
+#include <algorithm>
 #include "Plansza.h"
 
 using namespace std;
 
 void addRandomNumber(unsigned long long &random_value, size_t size, ifstream &urandom);
-void totalHitSum(shared_ptr<Plansza> totalHits);
+void totalBoardHit(shared_ptr<Plansza> totalHits);
 long long getValueAndPop(queue <long long> &kolejka);
+void print(shared_ptr<Plansza>wynik);
+void totalHitSum(shared_ptr<Plansza> total, vector<shared_ptr<Plansza>> wynik);
 
 mutex QUEUE_GUARD;
 condition_variable RANDOM_GENERATED;
@@ -61,11 +64,20 @@ int main()
   vector<thread> threads;
 
   auto GENERATOR = thread(generuj);
-  auto plansza = make_shared<Plansza>();
-  scores.push_back(plansza);
-  threads.push_back(thread(totalHitSum, plansza));
+
+  for(int i=0; i<THREAD_COUNT;i++){
+    auto plansza = make_shared<Plansza>();
+    scores.push_back(plansza);
+    threads.push_back(thread(totalBoardHit, plansza));
+  }
+
+
+  auto total = make_shared<Plansza>();
+  auto SUMATOR = thread(totalHitSum, total, scores);
+  auto APROKSYMATOR = thread(print, total);
 
   GENERATOR.join();
+  APROKSYMATOR.join();
 
   return 0;
 }
@@ -84,7 +96,7 @@ long long getValueAndPop(queue <long long> &kolejka)
   return var;
 }
 
-void totalHitSum(shared_ptr<Plansza> totalHits)
+void totalBoardHit(shared_ptr<Plansza> totalHits)
 {
 	while (!THREAD_STOP) {
 		unique_lock<mutex> lock(QUEUE_GUARD);
@@ -95,6 +107,33 @@ void totalHitSum(shared_ptr<Plansza> totalHits)
 		totalHits->incrementTotal();
 		if (z <= RADIUS)
 			totalHits->incrementHits();
-      cout<<totalHits->getHits() << endl;
 	}
+}
+
+void totalHitSum(shared_ptr<Plansza> totalScore, vector<shared_ptr<Plansza>> wynik)
+{
+  while (!THREAD_STOP){
+    long long hit=0;
+    long long total=0;
+
+    for_each(wynik.begin(), wynik.end(), [&hit, &total](shared_ptr<Plansza> plansza){
+      hit += plansza->getHits();
+      total += plansza->getTotal();
+    });
+    totalScore->setHits(hit);
+    totalScore->setTotal(total);
+  }
+}
+
+void print(shared_ptr<Plansza>wynik)
+{
+  while (!THREAD_STOP){
+    this_thread::sleep_for(chrono::seconds(1));
+    if (wynik->getTotal() != 0){
+      double ratio = ( (double) wynik->getHits() ) / ( (double) wynik->getTotal() );
+      double pi = ratio * 4.0f;
+      cout.precision(30);
+      cout << pi << endl;
+    }
+  }
 }
