@@ -11,6 +11,7 @@
 #include <queue>
 #include <cmath>
 #include <algorithm>
+#include <ncurses.h>
 #include "Plansza.h"
 
 using namespace std;
@@ -24,10 +25,10 @@ void totalHitSum(shared_ptr<Plansza> total, vector<shared_ptr<Plansza>> wynik);
 mutex QUEUE_GUARD;
 condition_variable RANDOM_GENERATED;
 queue <long long> LICZBY_LOSOWE; // kolejka przechowujaca liczby losowe
-const int THREAD_COUNT = 4; // ilosc watkow
+const int THREAD_COUNT = 2; // ilosc watkow
 bool THREAD_STOP = false;
 vector<shared_ptr<Plansza>> scores;
-long RADIUS = 100000;
+long RADIUS = 1000000;
 
 void generuj()
 {
@@ -37,18 +38,11 @@ void generuj()
     if(urandom)
     {
       while(!THREAD_STOP){
-        urandom.read(reinterpret_cast<char*>(&random_value), size); //read urandom
-        if(urandom) //read ok
-        {
-            lock_guard<mutex> guard(QUEUE_GUARD);
-            addRandomNumber(random_value, size, urandom);
-            addRandomNumber(random_value, size, urandom);
-            RANDOM_GENERATED.notify_one();
-        }
-        else
-        {
-            cerr << "Cannot read /dev/urandom" << endl;
-        }
+        //urandom.read(reinterpret_cast<char*>(&random_value), size); //read urandom
+        lock_guard<mutex> guard(QUEUE_GUARD);
+        addRandomNumber(random_value, size, urandom);
+        addRandomNumber(random_value, size, urandom);
+        RANDOM_GENERATED.notify_one();
       }
         urandom.close(); //close stream
     }
@@ -60,6 +54,8 @@ void generuj()
 
 int main()
 {
+  initscr();
+
   vector<shared_ptr<Plansza>> scores;
   vector<thread> threads;
 
@@ -79,7 +75,7 @@ int main()
   GENERATOR.join();
   APROKSYMATOR.join();
 
-  return 0;
+  endwin();
 }
 
 void addRandomNumber(unsigned long long &random_value, size_t size, ifstream &urandom)
@@ -99,7 +95,7 @@ long long getValueAndPop(queue <long long> &kolejka)
 void totalBoardHit(shared_ptr<Plansza> totalHits)
 {
 	while (!THREAD_STOP) {
-		unique_lock<mutex> lock(QUEUE_GUARD);
+		unique_lock<mutex> lock(QUEUE_GUARD); //can be unlocked
 		RANDOM_GENERATED.wait(lock);
     long long x = getValueAndPop(LICZBY_LOSOWE);
     long long y = getValueAndPop(LICZBY_LOSOWE);
@@ -110,7 +106,7 @@ void totalBoardHit(shared_ptr<Plansza> totalHits)
 	}
 }
 
-void totalHitSum(shared_ptr<Plansza> totalScore, vector<shared_ptr<Plansza>> wynik)
+void totalHitSum(shared_ptr<Plansza> totalScore, vector<shared_ptr<Plansza>> wynik) //funkcja sumujaca PRZETWARZACZE
 {
   while (!THREAD_STOP){
     long long hit=0;
@@ -128,12 +124,14 @@ void totalHitSum(shared_ptr<Plansza> totalScore, vector<shared_ptr<Plansza>> wyn
 void print(shared_ptr<Plansza>wynik)
 {
   while (!THREAD_STOP){
-    this_thread::sleep_for(chrono::seconds(1));
+    this_thread::sleep_for(chrono::milliseconds(100));
     if (wynik->getTotal() != 0){
       double ratio = ( (double) wynik->getHits() ) / ( (double) wynik->getTotal() );
       double pi = ratio * 4.0f;
-      cout.precision(30);
-      cout << pi << endl;
+      refresh();
+      clear();
+      wcout.precision(30);
+      wcout << pi << endl;
     }
   }
 }
