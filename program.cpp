@@ -28,7 +28,7 @@ queue <long long> LICZBY_LOSOWE; // kolejka przechowujaca liczby losowe
 const int THREAD_COUNT = 2; // ilosc watkow
 bool THREAD_STOP = false;
 vector<shared_ptr<Plansza>> scores;
-long RADIUS = 1000000;
+long RADIUS = 1000;
 
 void generuj()
 {
@@ -114,7 +114,6 @@ void totalHitSum(shared_ptr<Plansza> totalScore, vector<shared_ptr<Plansza>> wyn
 
     for_each(wynik.begin(), wynik.end(), [&hit, &total](shared_ptr<Plansza> plansza){
       hit += plansza->getHits();
-      total += plansza->getTotal();
     });
     totalScore->setHits(hit);
     totalScore->setTotal(total);
@@ -130,6 +129,7 @@ void print(shared_ptr<Plansza>wynik)
       double pi = ratio * 4.0f;
       refresh();
       clear();
+      cout<<"pi approximation: ";
       wcout.precision(30);
       wcout << pi << endl;
     }
