@@ -114,6 +114,7 @@ void totalHitSum(shared_ptr<Plansza> totalScore, vector<shared_ptr<Plansza>> wyn
 
     for_each(wynik.begin(), wynik.end(), [&hit, &total](shared_ptr<Plansza> plansza){
       hit += plansza->getHits();
+      total += plansza->getTotal();
     });
     totalScore->setHits(hit);
     totalScore->setTotal(total);
